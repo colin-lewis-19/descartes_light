@@ -3,6 +3,7 @@
 #include <descartes_light/solvers/ladder_graph/ladder_graph_solver.h>
 #include <descartes_light/solvers/bgl/bgl_dijkstra_solver.h>
 #include <descartes_light/solvers/bgl/dfs_add_all_solver.h>
+#include <descartes_light/solvers/bgl/dfs_sort_ladder_graph_solver.h>
 #include <descartes_light/test/utils.h>
 #include <descartes_light/test/solver_factory.h>
 
@@ -17,7 +18,6 @@ DESCARTES_IGNORE_WARNINGS_PUSH
 DESCARTES_IGNORE_WARNINGS_POP
 
 using namespace descartes_light;
-
 /**
  * @brief Test fixture for the solver interface
  */
@@ -47,7 +47,9 @@ using Implementations = ::testing::Types<SolverFactory<LadderGraphSolverF>,
                                          SolverFactory<BGLEfficientDijkstraSVSESolverF>,
                                          SolverFactory<BGLEfficientDijkstraSVSESolverD>,
                                          SolverFactory<DFSAddAllSolverF>,
-                                         SolverFactory<DFSAddAllSolverD>>;
+                                         SolverFactory<DFSAddAllSolverD>,
+                                         SolverFactory<DFSSortLadderGraphSolverF>,
+                                         SolverFactory<DFSSortLadderGraphSolverD>>;
 
 TYPED_TEST_CASE(SolverFixture, Implementations);
 
