@@ -2,6 +2,7 @@
 #include <descartes_light/edge_evaluators/euclidean_distance_edge_evaluator.h>
 #include <descartes_light/solvers/ladder_graph/ladder_graph_solver.h>
 #include <descartes_light/solvers/bgl/bgl_ladder_graph_solver.h>
+#include <descartes_light/solvers/bgl/dfs_sort_ladder_graph_solver.h>
 
 #include <descartes_light/descartes_macros.h>
 DESCARTES_IGNORE_WARNINGS_PUSH
@@ -134,6 +135,18 @@ struct SolverConfigurator<BGLLadderGraphSolver<FloatT>>
 template struct SolverConfigurator<BGLLadderGraphSolverF>;
 template struct SolverConfigurator<BGLLadderGraphSolverD>;
 
+
+// DFSSort Ladder graph solver configurator
+template <typename FloatT>
+struct SolverConfigurator<DFSSortLadderGraphSolver<FloatT>>
+{
+  using FloatType = FloatT;
+  typename Solver<FloatT>::Ptr create() { return std::make_unique<DFSSortLadderGraphSolver<FloatT>>(6, 1); }
+};
+template struct SolverConfigurator<DFSSortLadderGraphSolverF>;
+template struct SolverConfigurator<DFSSortLadderGraphSolverD>;
+
+
 /**
  * @brief Test fixture for the solver interface
  */
@@ -172,7 +185,9 @@ public:
 using Implementations = ::testing::Types<SolverConfigurator<LadderGraphSolverF>,
                                          SolverConfigurator<LadderGraphSolverD>,
                                          SolverConfigurator<BGLLadderGraphSolverF>,
-                                         SolverConfigurator<BGLLadderGraphSolverD>>;
+                                         SolverConfigurator<BGLLadderGraphSolverD>,
+                                         SolverConfigurator<DFSSortLadderGraphSolverF>,
+                                         SolverConfigurator<DFSSortLadderGraphSolverD>>;
 
 TYPED_TEST_CASE(SolverFixture, Implementations);
 
