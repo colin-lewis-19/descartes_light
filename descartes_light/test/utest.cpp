@@ -2,7 +2,7 @@
 #include <descartes_light/edge_evaluators/euclidean_distance_edge_evaluator.h>
 #include <descartes_light/solvers/ladder_graph/ladder_graph_solver.h>
 #include <descartes_light/solvers/bgl/bgl_ladder_graph_solver.h>
-#include <descartes_light/solvers/bgl/dfs_sort_ladder_graph_solver.h>
+#include <descartes_light/solvers/bgl/dfs_add_all_solver.h>
 
 #include <descartes_light/descartes_macros.h>
 DESCARTES_IGNORE_WARNINGS_PUSH
@@ -138,13 +138,13 @@ template struct SolverConfigurator<BGLLadderGraphSolverD>;
 
 // DFSSort Ladder graph solver configurator
 template <typename FloatT>
-struct SolverConfigurator<DFSSortLadderGraphSolver<FloatT>>
+struct SolverConfigurator<DFSAddAllSolver<FloatT>>
 {
   using FloatType = FloatT;
-  typename Solver<FloatT>::Ptr create() { return std::make_unique<DFSSortLadderGraphSolver<FloatT>>(6, 1); }
+  typename Solver<FloatT>::Ptr create() { return std::make_unique<DFSAddAllSolver<FloatT>>(6, 1); }
 };
-template struct SolverConfigurator<DFSSortLadderGraphSolverF>;
-template struct SolverConfigurator<DFSSortLadderGraphSolverD>;
+template struct SolverConfigurator<DFSAddAllSolverF>;
+template struct SolverConfigurator<DFSAddAllSolverD>;
 
 
 /**
@@ -186,8 +186,8 @@ using Implementations = ::testing::Types<SolverConfigurator<LadderGraphSolverF>,
                                          SolverConfigurator<LadderGraphSolverD>,
                                          SolverConfigurator<BGLLadderGraphSolverF>,
                                          SolverConfigurator<BGLLadderGraphSolverD>,
-                                         SolverConfigurator<DFSSortLadderGraphSolverF>,
-                                         SolverConfigurator<DFSSortLadderGraphSolverD>>;
+                                         SolverConfigurator<DFSAddAllSolverF>,
+                                         SolverConfigurator<DFSAddAllSolverD>>;
 
 TYPED_TEST_CASE(SolverFixture, Implementations);
 
