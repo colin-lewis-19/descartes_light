@@ -50,7 +50,7 @@ public:
   std::vector<std::vector<VertexDesc<FloatType>>> ladder_rungs;
 private:
   //need to store edge evaluator for use in search method. todo: reference? -> scope concerns
-  std::vector<EdgeEvaluator<FloatType>> edge_eval;
+  std::vector<typename EdgeEvaluator<FloatType>::ConstPtr> edge_eval{ nullptr };
   std::size_t dof_;
   bglgraph<FloatType> graph_;
   int num_threads_;
