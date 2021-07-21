@@ -7,7 +7,6 @@
 #include <descartes_light/core/edge_evaluator.h>
 #include <descartes_light/solvers/bgl/boost_ladder_types.h>
 
-//heres a terrible idea: pass the graph by reference into the vsitor so that it may edit as it traverses
 namespace descartes_light
 {
 template <typename FloatType>
@@ -24,9 +23,6 @@ struct AddAllVisitor : boost::default_dijkstra_visitor
        {
        }
 
-  // must have copy constructor
-  //AddAllVisitor() : AddAllVisitor
-
   void examine_vertex(VertexDesc<FloatType> u, bglgraph<FloatType> g)
   {
     int out_deg = boost::out_degree(u, g);
@@ -35,8 +31,7 @@ struct AddAllVisitor : boost::default_dijkstra_visitor
     {
       // check rung
       VertexDesc<FloatType> curr = u;
-      // todo: find a better way to select rungs
-      std::size_t next_rung = 0; // assuming that a dummy start node is still used -> This does not work bc predecessors preallocates based on vertices
+      std::size_t next_rung = 0;
       for (VertexDesc<FloatType> prev = predecessors.at(curr); prev != curr; curr = prev, prev = predecessors.at(curr))
       {
         ++next_rung;
