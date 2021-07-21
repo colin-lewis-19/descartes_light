@@ -59,7 +59,7 @@ BuildStatus DFSAddAllSolver<FloatType>::buildImpl(
     const std::vector<typename StateEvaluator<FloatType>::ConstPtr>& state_evaluators)
 {
   BuildStatus status;
-  auto edge_eval = std::move(edge_evaluators);
+  edge_eval = std::move(edge_evaluators);
 
   // Build Vertices
   long num_waypoints = static_cast<long>(trajectory.size());
@@ -179,7 +179,7 @@ SearchResult<FloatType> DFSAddAllSolver<FloatType>::search()
 
   boost::dijkstra_shortest_paths(graph_, sd, predecessor_prop_map, distance_prop_map, weight_prop_map,
                                  index_prop_map, std::less<>(), std::plus<>(), std::numeric_limits<double>::max(), 0.0,
-                                 descartes_light::AddAllVisitor<FloatType>(edge_eval, predecessor_map, ladder_rungs));
+                                 descartes_light::AddAllVisitor<FloatType>(edge_eval, predecessor_map, ladder_rungs, graph_));
 
 
   // Find lowest cost node in last rung
