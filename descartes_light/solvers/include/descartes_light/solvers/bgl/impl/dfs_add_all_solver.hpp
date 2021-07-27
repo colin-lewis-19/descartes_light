@@ -129,7 +129,6 @@ template <typename FloatType>
 std::vector<typename State<FloatType>::ConstPtr> DFSAddAllSolver<FloatType>::reconstructPath(const VertexDesc<FloatType>& source, const VertexDesc<FloatType>& target,
                                         const std::map<VertexDesc<FloatType>, VertexDesc<FloatType>>& predecessor_map)
 {
-  sleep(5.0);
   // Reconstruct the path from predecessors
   std::vector<typename State<FloatType>::ConstPtr> path;
 
