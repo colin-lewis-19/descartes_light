@@ -4,6 +4,8 @@
 // Solvers
 #include <descartes_light/solvers/ladder_graph/ladder_graph_solver.h>
 #include <descartes_light/solvers/bgl/bgl_dijkstra_solver.h>
+#include <descartes_light/solvers/bgl/dfs_add_all_solver.h>
+
 
 DESCARTES_IGNORE_WARNINGS_PUSH
 #include <boost/core/demangle.hpp>
@@ -87,6 +89,10 @@ int main(int, char**)
   // BGL efficient Dijkstra solver
   benchmark(SolverFactory<BGLEfficientDijkstraSVSESolverD>());
   benchmark(SolverFactory<BGLEfficientDijkstraSVSESolverF>());
+
+  // BGL Visitor Add All Solver
+  benchmark(SolverFactory<DFSAddAllSolverF>());
+  benchmark(SolverFactory<DFSAddAllSolverD>());
 
   return 0;
 }

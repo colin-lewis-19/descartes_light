@@ -15,129 +15,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef DESCARTES_LIGHT_DFS_SORT_LADDER_GRAPH_SOLVER_HPP
-#define DESCARTES_LIGHT_DFS_SORT_LADDER_GRAPH_SOLVER_HPP
+#ifndef DESCARTES_LIGHT_SOLVERS_BGL_IMPL_ADD_ALL_DYNAMIC_DIJKSTRA_SOLVER_HPP
+#define DESCARTES_LIGHT_SOLVERS_BGL_IMPL_ADD_ALL_DYNAMIC_DIJKSTRA_SOLVER_HPP
 
 #include <descartes_light/descartes_macros.h>
 DESCARTES_IGNORE_WARNINGS_PUSH
 #include <console_bridge/console.h>
 #include <omp.h>
-
+#include <boost/graph/dijkstra_shortest_paths.hpp>
 #include <descartes_light/solvers/bgl/dfs_add_all_solver.h>
-#include <descartes_light/solvers/bgl/impl/bgl_visitors.hpp>
 #include <descartes_light/types.h>
 
 #define UNUSED(x) (void)(x)
 
-static void reportFailedVertices(const std::vector<std::size_t>& indices)
-{
-  if (indices.empty())
-    CONSOLE_BRIDGE_logInform("No failed vertices");
-  else
-  {
-    std::stringstream ss;
-    ss << "Failed vertices:\n";
-    for (const auto& i : indices)
-      ss << "\t" << i << "\n";
-
-    CONSOLE_BRIDGE_logWarn(ss.str().c_str());
-  }
-}
-
 namespace descartes_light
 {
-template <typename FloatType>
-DFSAddAllSolver<FloatType>::DFSAddAllSolver(const std::size_t dof, int num_threads)
-  : dof_{dof}, num_threads_{ num_threads }
-{
-};
-
-template <typename FloatType>
-BuildStatus DFSAddAllSolver<FloatType>::buildImpl(
-    const std::vector<typename WaypointSampler<FloatType>::ConstPtr>& trajectory,
-    const std::vector<typename EdgeEvaluator<FloatType>::ConstPtr>& edge_evaluators,
-    const std::vector<typename StateEvaluator<FloatType>::ConstPtr>& state_evaluators)
-{
-  BuildStatus status;
-  edge_eval = std::move(edge_evaluators);
-
-  // Build Vertices
-  long num_waypoints = static_cast<long>(trajectory.size());
-  ladder_rungs_.resize(num_waypoints);
-  long cnt = 0;
-
-  using Clock = std::chrono::high_resolution_clock;
-  std::chrono::time_point<Clock> start_time = Clock::now();
-  #pragma omp parallel for num_threads(num_threads_)
-  for (long i = 0; i < static_cast<long>(trajectory.size()); ++i)
-  {
-    std::vector<StateSample<FloatType>> samples = trajectory[static_cast<size_t>(i)]->sample();
-    if (!samples.empty())
-    {
-      for (StateSample<FloatType>& sample : samples)
-      {
-        VertexDesc<FloatType> vd;
-        if (state_evaluators.empty())
-        {
-           throw std::runtime_error("Failed to find evaluate state");
-        }
-        else
-        {
-          std::pair<bool, FloatType> results = state_evaluators[static_cast<size_t>(i)]->evaluate(*samples[i].state);
-          if (results.first)
-          {
-            sample.cost += results.second;
-            vd = add_vertex(graph_);
-            graph_[vd].sample = sample;
-            graph_[vd].rung_idx = static_cast<long>(i);
-            ladder_rungs_[static_cast<size_t>(i)].push_back(vd);
-          }
-        }
-      }
-    }
-    else
-    {
-#pragma omp critical
-      {
-        status.failed_vertices.push_back(static_cast<size_t>(i));
-      }
-    }
-#ifndef NDEBUG
-#pragma omp critical
-    {
-      ++cnt;
-      std::stringstream ss;
-      ss << "Descartes Processed: " << cnt << " of " << num_waypoints << " vertices";
-      CONSOLE_BRIDGE_logInform(ss.str().c_str());
-    }
-#endif
-  }
-  double duration = std::chrono::duration<double>(Clock::now() - start_time).count();
-  CONSOLE_BRIDGE_logDebug("Descartes took %0.4f seconds to build vertices.", duration);
-
-  // Create a zero-value, zero-cost start node and connect it with a zero-cost edge to each node in the first rung
-  {
-    source_ = boost::add_vertex(graph_);
-    auto arr = std::make_shared<State<FloatType>>();
-    graph_[source_].sample = StateSample<FloatType>{ arr, static_cast<FloatType>(0.0) };
-    graph_[source_].rung_idx = -1;
-    for (const VertexDesc<FloatType>& target : ladder_rungs_[0])
-    {
-      boost::add_edge(source_, target, static_cast<FloatType>(0.0), graph_);
-    }
-  }
-
-  std::sort(status.failed_vertices.begin(), status.failed_vertices.end());
-  reportFailedVertices(status.failed_vertices);
-
-  if (!status)
-  {
-    CONSOLE_BRIDGE_logError("LadderGraphSolver failed to build graph.");
-  }
-
-  return status;
-}
-
 
 template <typename FloatType>
 std::vector<VertexDesc<FloatType>> DFSAddAllSolver<FloatType>::reconstructPath(const VertexDesc<FloatType>& source,
@@ -162,19 +54,57 @@ std::vector<VertexDesc<FloatType>> DFSAddAllSolver<FloatType>::reconstructPath(c
   return path;
 }
 
-template <typename FloatType>
-std::vector<typename State<FloatType>::ConstPtr>
-DFSAddAllSolver<FloatType>::toStates(const std::vector<VertexDesc<FloatType>>& path) const
-{
-  // Get the state information from the graph using the vertex descriptors
-  std::vector<typename State<FloatType>::ConstPtr> out;
-  out.reserve(path.size());
-  std::transform(path.begin(), path.end(), std::back_inserter(out), [this](const VertexDesc<FloatType>& vd) {
-    return graph_[vd].sample.state;
-  });
 
-  return out;
-}
+template <typename FloatType>
+class AddAllVisitor : public boost::default_dijkstra_visitor
+{
+  public:
+  AddAllVisitor(std::vector<typename EdgeEvaluator<FloatType>::ConstPtr>& edge_eval,
+                std::vector<std::vector<VertexDesc<FloatType>>>& ladder_rungs,
+                BGLGraph<FloatType>& eg)
+                : eval_(edge_eval),
+                  ladder_rungs_(ladder_rungs),
+                  mutable_graph_(eg)
+       {
+       }
+
+  void examine_vertex(VertexDesc<FloatType> u, BGLGraph<FloatType> g)
+  {
+    int out_deg = boost::out_degree(u, g);
+    // return if the vertex has any out edges
+    if (out_deg == 0)
+    {
+      if (g[u].rung_idx + 1 < ladder_rungs_.size())
+      {
+        FloatType cost;
+        for (std::size_t s = 0; s < ladder_rungs_[g[u].rung_idx + 1].size(); ++s)
+        {
+          std::pair<bool, FloatType> results =
+              eval_[static_cast<size_t>(g[u].rung_idx)]->evaluate(*g[u].sample.state, *g[ladder_rungs_[g[u].rung_idx+1][s]].sample.state);
+          if (results.first)
+          {
+            cost = results.second + g[ladder_rungs_[g[u].rung_idx + 1][s]].sample.cost;
+            if (g[u].rung_idx == 0)
+              cost += g[u].sample.cost;
+            VertexDesc<FloatType> sap = ladder_rungs_[g[u].rung_idx + 1][s];
+            boost::add_edge(u, sap, cost, mutable_graph_);
+          }
+        }
+      }
+      // Depth First Component
+      else
+      {
+        throw u;
+      }
+    }
+    return;
+  }
+
+private:
+  std::vector<typename EdgeEvaluator<FloatType>::ConstPtr> eval_{ nullptr };
+  std::vector<std::vector<VertexDesc<FloatType>>>& ladder_rungs_;
+  BGLGraph<FloatType>& mutable_graph_{ nullptr };
+};
 
 template <typename FloatType>
 SearchResult<FloatType> DFSAddAllSolver<FloatType>::search()
@@ -182,6 +112,13 @@ SearchResult<FloatType> DFSAddAllSolver<FloatType>::search()
   SearchResult<FloatType> result;
 
   // Internal properties
+  auto& graph_ = BGLSolverBase<FloatType>::graph_;
+  const auto& source_ = BGLSolverBase<FloatType>::source_;
+  auto& predecessor_map_ = BGLSolverBase<FloatType>::predecessor_map_;
+  auto& ladder_rungs_ = BGLSolverBase<FloatType>::ladder_rungs_;
+  auto& edge_eval_ = BGLSolverBaseSVDE<FloatType>::edge_eval_;
+
+
   auto index_prop_map = boost::get(boost::vertex_index, graph_);
   auto weight_prop_map = boost::get(boost::edge_weight, graph_);
 
@@ -193,27 +130,43 @@ SearchResult<FloatType> DFSAddAllSolver<FloatType>::search()
   std::map<VertexDesc<FloatType>, double> distance_map;
   boost::associative_property_map<std::map<VertexDesc<FloatType>, double>> distance_prop_map(distance_map);
 
-  boost::dijkstra_shortest_paths(graph_, source_, predecessor_prop_map, distance_prop_map, weight_prop_map,
-                                 index_prop_map, std::less<>(), std::plus<>(), std::numeric_limits<double>::max(), 0.0,
-                                 descartes_light::AddAllVisitor<FloatType>(edge_eval, predecessor_map_, ladder_rungs_, graph_));
+  auto color_prop_map = boost::get(&Vertex<FloatType>::color, graph_);
 
+  descartes_light::AddAllVisitor<FloatType> visitor(edge_eval_, ladder_rungs_, graph_);
 
-  // Find lowest cost node in last rung
-  auto target = std::min_element(ladder_rungs_.back().begin(), ladder_rungs_.back().end(), [&distance_map](const VertexDesc<FloatType>& a, const VertexDesc<FloatType>& b){
-    return distance_map.at(a) < distance_map.at(b);
-  });
+  try
+  {
+    boost::dijkstra_shortest_paths(graph_,
+                                   source_,
+                                   predecessor_prop_map,
+                                   distance_prop_map,
+                                   weight_prop_map,
+                                   index_prop_map,
+                                   std::less<>(),
+                                   std::plus<>(),
+                                   std::numeric_limits<double>::max(),
+                                   0.0,
+                                   visitor,
+                                   color_prop_map);
 
-  result.trajectory = toStates(reconstructPath(source_, *target));
+  }
+  catch (const VertexDesc<FloatType>& target)
+  {
+    const auto valid_path = BGLSolverBase<FloatType>::reconstructPath(source_, target);
+    result.trajectory = BGLSolverBase<FloatType>::toStates(valid_path);
 
-  // remove empty start state
-  result.trajectory.erase(result.trajectory.begin());
+    // remove empty start state
+    result.trajectory.erase(result.trajectory.begin());
 
-  result.cost = distance_map.at(*target);
+    result.cost = distance_map.at(target);
 
-  if(result.trajectory.empty())
-    throw std::runtime_error("failed");
+    return result;
+  }
 
-  return result;
+  throw std::runtime_error("Failed to reach last rung");
+
 }
-}
-#endif //DESCARTES_LIGHT_DFS_SORT_LADDER_GRAPH_SOLVER_HPP
+
+}  //namespace descartes_light
+
+#endif //DESCARTES_LIGHT_SOLVERS_BGL_IMPL_ADD_ALL_DYNAMIC_DIJKSTRA_SOLVER_HPP

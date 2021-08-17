@@ -17,6 +17,7 @@
  */
 #include <descartes_light/solvers/bgl/impl/bgl_solver.hpp>
 #include <descartes_light/solvers/bgl/impl/bgl_dijkstra_solver.hpp>
+#include <descartes_light/solvers/bgl/impl/dfs_add_all_solver.hpp>
 #include <descartes_light/solvers/bgl/impl/utils.hpp>
 
 namespace descartes_light
@@ -38,6 +39,9 @@ template class BGLDijkstraSVSESolver<float>;
 
 template class BGLEfficientDijkstraSVSESolver<double>;
 template class BGLEfficientDijkstraSVSESolver<float>;
+
+template class DFSAddAllSolver<double>;
+template class DFSAddAllSolver<float>;
 
 // Free functions
 template SubGraph<double> createDecoratedSubGraph(const BGLGraph<double>& g);

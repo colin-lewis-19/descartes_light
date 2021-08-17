@@ -8,4 +8,6 @@ template struct SolverFactory<BGLDijkstraSVSESolverF>;
 template struct SolverFactory<BGLDijkstraSVSESolverD>;
 template struct SolverFactory<BGLEfficientDijkstraSVSESolverF>;
 template struct SolverFactory<BGLEfficientDijkstraSVSESolverD>;
+template struct SolverFactory<DFSAddAllSolverF>;
+template struct SolverFactory<DFSAddAllSolverD>;
 }  // namespace descartes_light
