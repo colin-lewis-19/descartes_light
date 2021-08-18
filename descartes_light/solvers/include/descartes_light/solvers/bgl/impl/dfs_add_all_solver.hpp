@@ -30,30 +30,6 @@ namespace descartes_light
 {
 
 template <typename FloatType>
-std::vector<VertexDesc<FloatType>> DFSAddAllSolver<FloatType>::reconstructPath(const VertexDesc<FloatType>& source,
-                                                                                             const VertexDesc<FloatType>& target) const
-{
-  // Reconstruct the path from predecessors
-  std::vector<VertexDesc<FloatType>> path;
-
-  VertexDesc<FloatType> v = target;
-  path.push_back(v);
-
-  for (VertexDesc<FloatType> u = predecessor_map_.at(v); u != v; v = u, u = predecessor_map_.at(v))
-  {
-    path.push_back(u);
-  }
-  std::reverse(path.begin(), path.end());
-
-  // Check that the last traversed vertex is the source vertex
-  if (v != source)
-    throw std::runtime_error("Failed to find path through the graph");
-
-  return path;
-}
-
-
-template <typename FloatType>
 class AddAllVisitor : public boost::default_dijkstra_visitor
 {
   public:
@@ -72,8 +48,8 @@ class AddAllVisitor : public boost::default_dijkstra_visitor
     // return if the vertex has any out edges
     if (out_deg == 0)
     {
-    std::size_t current_rung = g[u].rung_idx;
-    std::size_t next_rung = current_rung + 1;
+      std::size_t current_rung = g[u].rung_idx;
+      std::size_t next_rung = current_rung + 1;
       if (next_rung < ladder_rungs_.size())
       {
         FloatType cost;

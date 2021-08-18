@@ -31,28 +31,6 @@ DESCARTES_IGNORE_WARNINGS_PUSH
 
 namespace descartes_light
 {
-template <typename FloatType>
-std::vector<VertexDesc<FloatType>> DFSSortLadderGraphSolver<FloatType>::reconstructPath(const VertexDesc<FloatType>& source,
-                                                                                               const VertexDesc<FloatType>& target) const
-  {
-    // Reconstruct the path from predecessors
-    std::vector<VertexDesc<FloatType>> path;
-
-    VertexDesc<FloatType> v = target;
-    path.push_back(v);
-
-    for (VertexDesc<FloatType> u = predecessor_map_.at(v); u != v; v = u, u = predecessor_map_.at(v))
-    {
-      path.push_back(u);
-    }
-    std::reverse(path.begin(), path.end());
-
-    // Check that the last traversed vertex is the source vertex
-    if (v != source)
-      throw std::runtime_error("Failed to find path through the graph");
-
-    return path;
-  }
 
 template <typename FloatType>
 class VertexCostVisitor : public boost::default_dijkstra_visitor
@@ -150,7 +128,7 @@ SearchResult<FloatType> DFSSortLadderGraphSolver<FloatType>::search()
   result.trajectory = {};
 
   std::map<VertexDesc<FloatType>, VertexDesc<FloatType>> predecessor_map;
-  boost::associative_property_map<std::map<VertexDesc<FloatType>, VertexDesc<FloatType>>> predecessor_prop_map(predecessor_map);
+  boost::associative_property_map<std::map<VertexDesc<FloatType>, VertexDesc<FloatType>>> predecessor_prop_map(predecessor_map_);
 
   std::map<VertexDesc<FloatType>, double> distance_map;
   boost::associative_property_map<std::map<VertexDesc<FloatType>, double>> distance_prop_map(distance_map);
