@@ -33,20 +33,11 @@ struct SolverFactory<BGLEfficientDijkstraSVSESolver<FloatType>>
 };
 
 // Boost Add All Edges graph solver factory
-
-// Boost full Dijkstra graph solver factory
 template <typename FloatType>
 struct SolverFactory<DFSAddAllSolver<FloatType>>
 {
   typename Solver<FloatType>::Ptr create() const { return std::make_shared<DFSAddAllSolver<FloatType>>(1); }
 };
-//template <typename FloatType>
-//struct SolverFactory<DFSAddAllSolver<FloatType>>
-//{
-//  typename Solver<FloatType>::Ptr create() const
-//  {
-//    return std::make_shared<DFSAddAllSolver<FloatType>>(1);
-//  }
-//};
+
 
 }  // namespace descartes_light

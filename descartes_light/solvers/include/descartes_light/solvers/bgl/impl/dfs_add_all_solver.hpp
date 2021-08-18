@@ -26,8 +26,6 @@ DESCARTES_IGNORE_WARNINGS_PUSH
 #include <descartes_light/solvers/bgl/dfs_add_all_solver.h>
 #include <descartes_light/types.h>
 
-#define UNUSED(x) (void)(x)
-
 namespace descartes_light
 {
 
@@ -74,19 +72,21 @@ class AddAllVisitor : public boost::default_dijkstra_visitor
     // return if the vertex has any out edges
     if (out_deg == 0)
     {
-      if (g[u].rung_idx + 1 < ladder_rungs_.size())
+    std::size_t current_rung = g[u].rung_idx;
+    std::size_t next_rung = current_rung + 1;
+      if (next_rung < ladder_rungs_.size())
       {
         FloatType cost;
-        for (std::size_t s = 0; s < ladder_rungs_[g[u].rung_idx + 1].size(); ++s)
+        for (std::size_t s = 0; s < ladder_rungs_[next_rung].size(); ++s)
         {
           std::pair<bool, FloatType> results =
-              eval_[static_cast<size_t>(g[u].rung_idx)]->evaluate(*g[u].sample.state, *g[ladder_rungs_[g[u].rung_idx+1][s]].sample.state);
+              eval_[static_cast<size_t>(current_rung)]->evaluate(*g[u].sample.state, *g[ladder_rungs_[next_rung][s]].sample.state);
           if (results.first)
           {
-            cost = results.second + g[ladder_rungs_[g[u].rung_idx + 1][s]].sample.cost;
-            if (g[u].rung_idx == 0)
+            cost = results.second + g[ladder_rungs_[next_rung][s]].sample.cost;
+            if (current_rung == 0)
               cost += g[u].sample.cost;
-            VertexDesc<FloatType> sap = ladder_rungs_[g[u].rung_idx + 1][s];
+            VertexDesc<FloatType> sap = ladder_rungs_[next_rung][s];
             boost::add_edge(u, sap, cost, mutable_graph_);
           }
         }
