@@ -80,10 +80,10 @@ class AddAllVisitor : public boost::default_dijkstra_visitor
         for (std::size_t s = 0; s < ladder_rungs_[next_rung].size(); ++s)
         {
           std::pair<bool, FloatType> results =
-              eval_[static_cast<size_t>(current_rung)]->evaluate(*g[u].sample.state, *g[ladder_rungs_[next_rung][s]].sample.state);
+              eval_[static_cast<size_t>(current_rung]->evaluate(*g[u].sample.state, *g[ladder_rungs_[next_rung][s]].sample.state);
           if (results.first)
           {
-            cost = results.second + g[ladder_rungs_[next_rung][s]].sample.cost;
+            cost = results.second + g[ladder_rungs_[next_rung[s]].sample.cost;
             if (current_rung == 0)
               cost += g[u].sample.cost;
             VertexDesc<FloatType> sap = ladder_rungs_[next_rung][s];
