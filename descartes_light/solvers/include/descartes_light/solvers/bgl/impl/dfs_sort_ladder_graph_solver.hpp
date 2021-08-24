@@ -57,34 +57,38 @@ class VertexCostVisitor : public boost::default_dijkstra_visitor
       {
         std::size_t to_indx = 0;
         FloatType cost;
-
-        auto& to_sample = mutable_graph_[ladder_rungs_[next_rung][to_indx]];
-
-        std::pair<bool, FloatType> results =
-            eval_[static_cast<size_t>(current_rung)]->evaluate(*g[u].sample.state, *to_sample.sample.state);
-        if (results.first)
+        bool edge_added = false; //not needed, added for clarity
+        while (!edge_added)
         {
-          cost = results.second + to_sample.sample.cost;
-          //Dummy node prevents this problem?
-          if (g[u].rung_idx == 0)
-            cost += g[u].sample.cost;
-          VertexDesc<FloatType> target_vert = ladder_rungs_[next_rung][to_indx];
-          boost::add_edge(u, target_vert, cost, mutable_graph_);
-          return;
-        }
-        else
-        {
-          if (to_indx != ladder_rungs_[next_rung].size())
+          auto& to_sample = mutable_graph_[ladder_rungs_[next_rung][to_indx]];
+
+          std::pair<bool, FloatType> results =
+              eval_[static_cast<size_t>(current_rung)]->evaluate(*g[u].sample.state, *to_sample.sample.state);
+          if (results.first)
           {
-             ++to_indx;
+            edge_added = true;
+            cost = results.second + to_sample.sample.cost;
+            //Dummy node prevents this problem?
+            if (g[u].rung_idx == 0)
+              cost += g[u].sample.cost;
+            VertexDesc<FloatType> target_vert = ladder_rungs_[next_rung][to_indx];
+            boost::add_edge(u, target_vert, cost, mutable_graph_);
+            return;
           }
           else
           {
-            throw std::runtime_error("No valid connections between two rungs");
-          }
-        } // end no edge else
-      }
-      // Depth First Component
+            if (to_indx != ladder_rungs_[next_rung].size())
+            {
+               ++to_indx;
+            }
+            else
+            {
+              throw std::runtime_error("No valid connections between two rungs");
+            } //end else
+          } // end no edge else
+        } //end while loop
+      } // end body search
+      // Depth First Component; stop if @ last rung
       else
       {
         throw u;
